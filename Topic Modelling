@@ -1,0 +1,134 @@
+#How to do Topic Modeling in R programing
+#survey data with question and Answers for about 1065 surverys.
+
+
+rm(list = ls())
+my = read.csv("survey.csv", stringsAsFactors = FALSE)
+
+# Stem the tokens
+rto <- my %>%
+  unnest_tokens(output = "word", token = "sentences", input = answer_text) %>%
+  anti_join(stop_words) %>%
+  mutate(word = wordStem(word))
+
+# Create a document term matrix 
+dtmm <- rto %>%
+  count(Sr, word) %>%
+  cast_dtm(document = Sr, term = word,
+           value = n, weighting = weightTf)
+
+# Print the matrix details 
+dtmm
+#dtmm = removeSparseTerms(dtmm, sparse = .99)
+
+print(dtmm)
+
+#------Topic Modeling
+install.packages("topicmodels")
+library(topicmodels)
+
+sentence_lda <-
+  LDA(dtmm, k = 4, method = 'Gibbs', control = list(seed = 1111))
+
+# Extract the beta matrix 
+sentence_betas <- tidy(sentence_lda, matrix = "beta")
+
+#----Words related to single topic have a highter beta value
+
+View(sentence_betas)
+
+#Top sentences by topic you can filter topic 1,2,3,4
+sentence_betas %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  arrange(topic, -beta) %>%
+  filter(topic == 1)
+
+
+# Topic #1
+sentence_betas %>%
+  filter(topic == 1) %>%
+  arrange(-beta)
+
+# Topic #2
+sentence_betas %>%
+  filter(topic == 2) %>%
+  arrange(-beta)
+
+# Topic #3
+sentence_betas %>%
+  filter(topic == 3) %>%
+  arrange(-beta)
+
+# Topic #4
+sentence_betas %>%
+  filter(topic == 4) %>%
+  arrange(-beta)
+
+# Extract the beta and gamma matrices
+sentence_betas <- tidy(sentence_lda, matrix = "beta")
+sentence_gammas <- tidy(sentence_lda, matrix = "gamma")
+
+
+#Testing perplexity
+# Setup train and test data
+sample_size <- floor(0.90 * nrow(dtmm))
+set.seed(1111)
+train_ind <- sample(nrow(dtmm), size = sample_size)
+train <- dtmm[train_ind, ]
+test <- dtmm[-train_ind, ]
+
+#---------Just Doing as if now
+# Peform topic modeling 
+lda_model <- LDA(train, k = 15, method = "Gibbs",
+                 control = list(seed = 1111))
+# Train
+perplexity(lda_model, newdata = train) 
+# Test
+perplexity(lda_model, newdata = test) 
+
+#----------
+
+library(topicmodels)
+values = c()
+for(i in c(2:35)){
+  lda_model <- LDA(train, k = i, method = "Gibbs",
+                   control = list(iter = 25, seed = 1111))
+  values <- c(values, perplexity(lda_model, newdata = test))
+}
+
+plot(c(2:35), values, main = "perplexity for topics",
+     xlab = "Number of topics", ylab = "perplexity")
+
+
+#-----After getting the K count which is 5
+#--- We will build LDA again
+
+
+sentence_lda <-
+  LDA(dtmm, k = 5, method = 'Gibbs', control = list(seed = 1111))
+
+
+# Extract the beta matrix 
+sentence_betas <- tidy(sentence_lda, matrix = "beta")
+
+#Reviwing output
+sentence_betas %>%
+  filter(topic == 5) %>%
+  arrange(desc(beta)) %>%
+  select(term)
+
+#summerize output 
+#With this we can say which topic was the best topic for how many sentences
+#We can clearly see Topic 5 was the best topic for all the sentences.
+
+gamma = tidy(sentence_lda, matrix = "gamma")
+gamma %>%
+  group_by(document) %>%
+  arrange(desc(gamma)) %>%
+  slice(1) %>%
+  group_by(topic) %>%
+  tally(topic, sort = TRUE)
+
+
+#---End of Topic Modeling
