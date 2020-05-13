@@ -1,0 +1,40 @@
+#Survey Data with Serial no as Sr, Questiona and Answeres.
+
+
+rm(list = ls())
+
+library(stringr)
+library(tidytext)
+library(dplyr)
+library(tm)
+
+my = read.csv("data.csv", stringsAsFactors = FALSE)
+
+# Create a tibble with TFIDF values
+TFIDF <- my %>%
+  unnest_tokens(output = "word", token = "sentences", input = answer_text) %>%
+  anti_join(stop_words) %>%
+  count(Sr, word) %>%
+  bind_tf_idf(word, Sr, n)
+
+# Find the highest TFIDF values
+TFIDF %>%
+  arrange(desc(tf_idf))
+
+# Find the lowest non-zero TFIDF values
+TFIDF %>%
+  filter(tf_idf != 0) %>%
+  arrange(desc(tf_idf))
+
+#---- Cosine Similarity
+
+#install.packages("widyr")
+library(widyr)
+
+TFIDF12 = TFIDF %>%
+  pairwise_similarity(Sr, word, tf_idf) %>%
+  arrange((similarity))
+
+TFIDF12
+
+#---- End of Cosin similarity
