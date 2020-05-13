@@ -3,10 +3,9 @@
 
 
 library(stringr)
-library(ngram)
+library(tidytext)
+library(dplyr)
 library(tm)
-library(sentimentr)
-library(hunspell)
 
 rm(list = ls())
 my = read.csv("survey.csv", stringsAsFactors = FALSE)
