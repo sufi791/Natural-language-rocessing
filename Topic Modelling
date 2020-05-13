@@ -2,6 +2,12 @@
 #survey data with question and Answers and Serial number for about 1065 surverys.
 
 
+library(stringr)
+library(ngram)
+library(tm)
+library(sentimentr)
+library(hunspell)
+
 rm(list = ls())
 my = read.csv("survey.csv", stringsAsFactors = FALSE)
 
