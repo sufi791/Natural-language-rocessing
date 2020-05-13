@@ -1,0 +1,31 @@
+library(tm)
+library(tidytext)
+library(dplyr)
+library(SnowballC)
+
+my = read.csv("data.csv")
+
+#Creating Document Term matrix with Tidytext pakage
+text = my %>%
+  unnest_tokens(output = "word", token = "sentences", input = answer_text) %>%
+  anti_join(stop_words) %>%
+  mutate(word = wordStem(word))
+
+View(text)
+
+dtm = my %>%
+  unnest_tokens(output = "word", token = "words", input = answer_text) %>%
+  anti_join(stop_words) %>%
+  count(Sr, word) %>%
+  cast_dtm(document = Sr, term = word,
+           value = n, weighting = tm::weightTfIdf)
+
+print(dtm)
+removeSparseTerms(dtm, sparse = .99)
+
+NROW(my$answer_text)
+View(dtm)
+print(dtm)
+
+
+
