@@ -1,11 +1,13 @@
 #How to do Topic Modeling in R programing
-#survey data with question and Answers for about 1065 surverys.
+#survey data with question and Answers and Serial number for about 1065 surverys.
 
 
 rm(list = ls())
 my = read.csv("survey.csv", stringsAsFactors = FALSE)
 
 # Stem the tokens
+#You can take tokens as words, lines and regex and sentences
+
 rto <- my %>%
   unnest_tokens(output = "word", token = "sentences", input = answer_text) %>%
   anti_join(stop_words) %>%
